@@ -1,3 +1,9 @@
+# gitignore template for Jupyter Notebooks
+# website: http://jupyter.org/
+
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
