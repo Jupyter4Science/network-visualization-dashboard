@@ -1,0 +1,18 @@
+name: network-application
+channels:
+  - conda-forge
+  - defaults
+  - fastai
+dependencies:
+  - ipywidgets
+  - pandas
+  - jupyterlab
+  - ipykernel
+  - jupyter
+  - voila
+  - notebook
+  - nbdev=2.3.12
+  - python=3.8
+  - fastcore=1.5.28
+  - networkx
+  - ipycytoscape
