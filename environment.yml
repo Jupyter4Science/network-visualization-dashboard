@@ -16,3 +16,4 @@ dependencies:
   - fastcore=1.5.28
   - networkx
   - ipycytoscape
+  - ipydatagrid
