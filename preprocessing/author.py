@@ -66,7 +66,7 @@ class Author:
     
     def add_contact_author_info(self, contact_author):
         # use the __eq__ function to make sure the author and contact_author are the same before merging them
-        assert self == contact_author, 'author and contact_author do not have the same name'
+        assert self.same_name(contact_author), 'author and contact_author do not have the same name'
         self.emails = self.emails + contact_author.emails
         self.merge_names(contact_author)
         
@@ -76,10 +76,10 @@ class Author:
         self.middle2 = self.middle2.longest(other.middle2)
         self.middle3 = self.middle3.longest(other.middle3)
         self.last = self.last.longest(other.last)
-        
-    def __eq__(self, other):
+
+    def same_name(self, other):
         return (self.last, self.first, self.middle, self.middle2, self.middle3) == (other.last, other.first, other.middle, other.middle2, other.middle3)
-    
+
     def __lt__(self, other):
         return (self.last, self.first, self.middle, self.middle2, self.middle3) < (other.last, other.first, other.middle, other.middle2, other.middle3)
 

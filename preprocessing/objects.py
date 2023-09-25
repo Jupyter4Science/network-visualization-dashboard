@@ -16,10 +16,11 @@ import pandas as pd
 def add_author_in_list(author_list, new_author):
     
     for existing_author in author_list:
-        if new_author == existing_author:
-            pass
+        if new_author.same_name(existing_author):
+            pass # TODO::: WHHHHHAT??!
             # combine info from each
             existing_author.merge_names(new_author)
+            # TODO: maybe also new_author.merge_names(existing_author?)
             # combine emails
             existing_author.add_contact_author_info(new_author)
             # publications
@@ -45,6 +46,7 @@ def create_objects(databaseFilePath):
             author_row_list = [] #List of authors in each publication; author Object
             # create a new publication object
             publication = Publication(id=row['id'], title=row['title'], doi=row['doi'])
+            publication.authors = []
             # add the publication to the list
             publication_list.append(publication)
     
@@ -79,18 +81,21 @@ def create_objects(databaseFilePath):
             if not author_exists and not contact_exists:
                 num_no_authors = num_no_authors + 1
             elif not author_exists: #No author exists
-                add_author_in_list(author_list, contact_author)            
+                add_author_in_list(author_list, contact_author)   
+                publication.authors.append(contact_author)
             elif not contact_exists: #No contact exists
                 for author in author_row_list:
                     # Add the Author to the list of Authors
                     add_author_in_list(author_list, author)
+                    publication.authors.append(author)
             elif author_exists and contact_exists: #Both author and contact exist
                  # If that author is also the contact author, add an email
                 for author in author_row_list:
-                    if (author == contact_author):
+                    if (author.same_name(contact_author)):
                        # print("True", author)
                         author.add_contact_author_info(contact_author)
                     add_author_in_list(author_list, author)
+                    publication.authors.append(author)
     
         else:
             # If there is no title or contact_email, skip this entry (do not add to lists)
