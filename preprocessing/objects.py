@@ -17,19 +17,21 @@ def add_author_in_list(author_list, new_author):
     
     for existing_author in author_list:
         if new_author.same_name(existing_author):
-            pass # TODO::: WHHHHHAT??!
+            #pass # TODO::: WHHHHHAT??!
             # combine info from each
             existing_author.merge_names(new_author)
-            # TODO: maybe also new_author.merge_names(existing_author?)
             # combine emails
             existing_author.add_contact_author_info(new_author)
             # publications
             for publication in new_author.publications:
                 existing_author.publications.append(publication)
-            return
+            return existing_author
+
+            
     # add new_author to list
     author_list.append(new_author)
-
+    return new_author
+    
 # %% ../create_objects.ipynb 17
 def create_objects(databaseFilePath):
 
@@ -63,7 +65,6 @@ def create_objects(databaseFilePath):
                     # Create an Author object
                     author = Author(last_name, first_name, middle_name1)
                     # Add the publication to the Author's list of publications
-                    author.publications.append(publication) ##TO DO: Check if contact_author ends up having a pub
                     author_row_list.append(author)
     
             # Create contact author
@@ -81,22 +82,32 @@ def create_objects(databaseFilePath):
             if not author_exists and not contact_exists:
                 num_no_authors = num_no_authors + 1
             elif not author_exists: #No author exists
-                add_author_in_list(author_list, contact_author)   
-                publication.authors.append(contact_author)
+                existing_author = add_author_in_list(author_list, contact_author)
+                publication.authors.append(existing_author)
+                existing_author.publications.append(publication)
             elif not contact_exists: #No contact exists
                 for author in author_row_list:
                     # Add the Author to the list of Authors
-                    add_author_in_list(author_list, author)
-                    publication.authors.append(author)
+                    existing_author = add_author_in_list(author_list, author)
+                    publication.authors.append(existing_author)
+                    existing_author.publications.append(publication)
             elif author_exists and contact_exists: #Both author and contact exist
                  # If that author is also the contact author, add an email
+                no_match = True
                 for author in author_row_list:
                     if (author.same_name(contact_author)):
                        # print("True", author)
                         author.add_contact_author_info(contact_author)
-                    add_author_in_list(author_list, author)
-                    publication.authors.append(author)
-    
+                        no_match = False
+
+                    existing_author = add_author_in_list(author_list, author)
+                    publication.authors.append(existing_author)
+                    existing_author.publications.append(publication)
+                    
+                if no_match:
+                    existing_author = add_author_in_list(author_list, contact_author)
+                    publication.authors.append(existing_author)
+                    existing_author.publications.append(publication)
         else:
             # If there is no title or contact_email, skip this entry (do not add to lists)
             num_no_publication = num_no_publication + 1
