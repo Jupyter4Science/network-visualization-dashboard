@@ -8,16 +8,15 @@ from .process_names import load_data, get_author_names_list, extract_names
 from .author import Author
 from .publication import Publication
 import pandas as pd
+from sortedcontainers import SortedList
 
-# %% ../create_objects.ipynb 7
-# if author with same name is in list, combine their info
-# else if author is not in list, append it to the list
-
+# %% ../create_objects.ipynb 21
 def add_author_in_list(author_list, new_author):
-    
-    for existing_author in author_list:
+
+    index = author_list.bisect_left(new_author)
+    if index < len(author_list):
+        existing_author = author_list[index]
         if new_author.same_name(existing_author):
-            #pass # TODO::: WHHHHHAT??!
             # combine info from each
             existing_author.merge_names(new_author)
             # combine emails
@@ -26,25 +25,23 @@ def add_author_in_list(author_list, new_author):
             for publication in new_author.publications:
                 existing_author.publications.append(publication)
             return existing_author
-
-            
     # add new_author to list
-    author_list.append(new_author)
+    author_list.add(new_author)
     return new_author
-    
-# %% ../create_objects.ipynb 17
-def create_objects(databaseFilePath):
 
+# %% ../create_objects.ipynb 31
+def create_objects(databaseFilePath, n=8000):
+        
     df = load_data(small=False, filePath=databaseFilePath)
     publication_list = []
-    author_list = []
+    author_list = SortedList()
     num_no_authors = 0
     num_no_publication = 0
     
     for index, row in df.iterrows():
-        
-        # If title or contact_email exists
-        if (row['title'] or row['doi']):
+
+        # only process the row if title or contact_email exists
+        if (row['title'] or row['doi']) and index <= n:
             author_row_list = [] #List of authors in each publication; author Object
             # create a new publication object
             publication = Publication(id=row['id'], title=row['title'], doi=row['doi'])
@@ -52,7 +49,6 @@ def create_objects(databaseFilePath):
             # add the publication to the list
             publication_list.append(publication)
     
-         
             author_names = row['author_names']
             
             if pd.isna(author_names) or (len(author_names) == 0) or (author_names).strip('[\'] ') == '':
@@ -62,10 +58,11 @@ def create_objects(databaseFilePath):
                 author_names_list = get_author_names_list(author_names)
                 for author_name in author_names_list:
                     last_name, first_name, middle_name1, middle_name2, middle_name3 = extract_names(author_name)
-                    # Create an Author object
-                    author = Author(last_name, first_name, middle_name1)
-                    # Add the publication to the Author's list of publications
-                    author_row_list.append(author)
+                    if last_name:
+                        # Create an Author object
+                        author = Author(last_name, first_name, middle_name1, middle_name2, middle_name3)
+                        # Add the publication to the Author's list of publications
+                        author_row_list.append(author)
     
             # Create contact author
             contact_name = row["contact_author_name"]
@@ -74,8 +71,9 @@ def create_objects(databaseFilePath):
                 contact_exists = False
             else: #Contact exists = no contact name
                 contact_exists = True
-                contact_last, contact_first, contact_middle, _, _ = extract_names(contact_name)
-                contact_author = Author(contact_last, contact_first, contact_middle, emails=[row["contact_email"]]) 
+                contact_last, contact_first, contact_middle, m2, m3 = extract_names(contact_name)
+                if contact_last:
+                    contact_author = Author(contact_last, contact_first, contact_middle, m2, m3, emails=[row["contact_email"]]) 
                 
             
             # If there is no value in author names and contact name, then add to no_authors count
@@ -96,7 +94,6 @@ def create_objects(databaseFilePath):
                 no_match = True
                 for author in author_row_list:
                     if (author.same_name(contact_author)):
-                       # print("True", author)
                         author.add_contact_author_info(contact_author)
                         no_match = False
 

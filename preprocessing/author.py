@@ -10,7 +10,13 @@ import bisect
 
 # %% ../author.ipynb 5
 class Name(str):
-    
+
+    def __new__(cls, value):  
+        if not value:
+            value = ''
+        obj = str.__new__(cls, value)
+        return obj    
+            
     def matches(self, other):
         return str(self) == str(other)
         
@@ -36,7 +42,7 @@ class Name(str):
         else:
             return self
 
-# %% ../author.ipynb 11
+# %% ../author.ipynb 15
 class Author:
     
     def __init__(self, last, first, middle='', middle2='', middle3='', emails=[]):
@@ -50,7 +56,7 @@ class Author:
 
     def full_name(self):
         strings = [getattr(self, attr) for attr in ('first', 'middle', 'middle2', 'middle3', 'last') if getattr(self, attr)]
-        strings = [x for x in strings if x is not None]
+        strings = list(filter(None, strings))
         strings = ' '.join(strings)
         return strings
         
