@@ -19,7 +19,4 @@ dependencies:
   - ipydatagrid
   - sortedcontainers
   - openpyxl
-  
-
-
-
+  - ipyvuetify 
