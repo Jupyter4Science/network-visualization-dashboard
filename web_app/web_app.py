@@ -4,8 +4,9 @@
 __all__ = ['accordion_welcome', 'accordion_about_dataset', 'accordion_key_features', 'welcome_next_button', 'welcome_tab',
            'authors', 'publications', 'authors_df', 'publications_df', 'author_datagrid', 'publication_datagrid',
            'datagrid', 'dropdown', 'setup_next_button', 'setup_tab', 'G_authors', 'G_publications', 'cyto', 'node_info',
-           'title_label', 'graph_next_button', 'graph_tab', 'download_button', 'html', 'export_tab', 'tabs',
-           'update_graph', 'log_mouseovers', 'code_file', 'on_button_click', 'on_node_mode_change']
+           'title_label', 'graph_next_button', 'graph_tab', 'download_publications', 'download_authors', 'button_stack',
+           'html', 'export_tab', 'tabs', 'update_graph', 'log_mouseovers', 'create_button', 'on_button_click',
+           'on_node_mode_change']
 
 # %% ../WebApp.ipynb 1
 import pprint
@@ -19,11 +20,10 @@ from ipywidgets import Output, link, jslink
 from pprint import pformat
 import pandas as pd
 from ipydatagrid import DataGrid
-from ipywidgets import Tab
+from ipywidgets import Tab, Stack
 from itertools import product
 import ipyvuetify as v
 import base64
-
 
 # %% ../WebApp.ipynb 2
 from preprocessing.objects import create_objects
@@ -151,7 +151,7 @@ for index_a in range(len(publications)):
             # print(f"Weighted Edge: {publication_a} - {publication_b} (Weight: {len(common_authors)})")
             # print(" ")
 
-# %% ../WebApp.ipynb 24
+# %% ../WebApp.ipynb 25
 # Create Output widget to show node information
 
 #out = widgets.Output()
@@ -189,44 +189,50 @@ _graph_tab = widgets.HBox([node_info, (cyto)], layout=widgets.Layout(width='100%
 graph_next_button = widgets.Button(description='Next', layout=widgets.Layout(width='auto', background_color='lightblue', color='black'))
 graph_tab = widgets.VBox([_graph_tab, graph_next_button])
 
-# %% ../WebApp.ipynb 26
+# %% ../WebApp.ipynb 27
 def log_mouseovers(node):
     node_info.value = node['data']['id']
 
 # Attach the mouseover and click callbacks to the Cytoscape widget
 cyto.on('node', 'mouseover', log_mouseovers)
 
-# %% ../WebApp.ipynb 31
-# Read authors.csv back into a variable
-with open('authors.csv', 'r', encoding='utf-8') as file:
-    authors_csv_data = file.read()
+# %% ../WebApp.ipynb 29
+def create_button(filename):
 
-# Read publications.csv back into a variable
-with open('publications.csv', 'r', encoding='utf-8') as file:
-    publications_csv_data = file.read()
-
-# %% ../WebApp.ipynb 32
-download_button = v.Btn(
-    class_="ma-2",
-    outlined=True,
-    href = "",
-    attributes={"download": True},
-    children=["Download CSV of Selected Tabular Data"]
-)
-
-# %% ../WebApp.ipynb 34
-def code_file(btn, filename, file_data):
-    b64 = base64.b64encode(file_data.encode())
+    with open(filename+'.csv', 'r', encoding='utf-8') as file:
+        res = file.read()
+    
+    b64 = base64.b64encode(res.encode())
     payload = b64.decode()
-    href = "data:text/csv;base64,{payload}".format(payload=payload,filename=filename)
-    btn.href = href
+    
+    button_template = '''<html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+    <a download="{filename}.csv" href="data:text/csv;base64,{payload}" download>
+    <button class="p-Widget jupyter-widgets jupyter-button widget-button mod-success">{filename}.csv</button>
+    </a>
+    </body>
+    </html>
+    '''
+    
+    download_text = button_template.format(payload=payload,filename=filename)
+    download_button = widgets.HTML(download_text)
+    return download_button
 
-# %% ../WebApp.ipynb 36
+# %% ../WebApp.ipynb 30
+download_publications = create_button('publications')
+download_authors = create_button('authors')
+
+# %% ../WebApp.ipynb 31
 ######### EXPORT TAB ##########
+button_stack = Stack(children = (download_publications, download_authors))
 html = widgets.HTML("<p>For more information about how the database was created and how model descriptions were categorized, visit <a href='https://doi.org/10.1016/j.envsoft.2020.104873' style='color: blue;'>On code sharing and model documentation of published individual and agent-based models</a>.</p>")
-export_tab = widgets.VBox(children=[download_button, html ])
+html.style
+export_tab = widgets.VBox(children=[button_stack, html])
 
-# %% ../WebApp.ipynb 38
+# %% ../WebApp.ipynb 33
 # Create the Tabs widget with Welcome, Setup, Graph, and Export tabs
 tabs = widgets.Tab(children=[welcome_tab, setup_tab, graph_tab, export_tab])
 tabs.set_title(0, 'Welcome')
@@ -234,7 +240,7 @@ tabs.set_title(1, 'Setup')
 tabs.set_title(2, 'Graph')
 tabs.set_title(3, 'Export')
 
-# %% ../WebApp.ipynb 40
+# %% ../WebApp.ipynb 35
 # Create a next button
 def on_button_click(button):
     # Switch to the second tab (index 1) when the button is clicked
@@ -244,26 +250,31 @@ welcome_next_button.on_click(on_button_click)
 setup_next_button.on_click(on_button_click)
 graph_next_button.on_click(on_button_click)
 
-# %% ../WebApp.ipynb 41
+# %% ../WebApp.ipynb 36
 # Temporary download function:
 def on_node_mode_change(change):
 
     title = "Download CSV file"
     selected_mode = change['new']
     if selected_mode == 'Authors':
+        setup_next_button.disabled = True
         cyto.graph.clear()
         cyto.graph.add_graph_from_networkx(G_authors)
-        code_file(download_button, 'authors.csv', authors_csv_data)
-        display(cyto)
+        button_stack.selected_index = 0
+        tabs.selected_index = 2
+        setup_next_button.disabled = False
     if selected_mode == 'Publications':
+        setup_next_button.disabled = True
         cyto.graph.clear()
         cyto.graph.add_graph_from_networkx(G_publications)
-        code_file(download_button, 'publications.csv', publications_csv_data)
-        display(cyto)
+        button_stack.selected_index = 1
+        tabs.selected_index = 2
+        setup_next_button.disabled = False
+        
 
 # Attach the event handler to the next button
 dropdown.observe(on_node_mode_change, names='value')
 
-# %% ../WebApp.ipynb 42
+# %% ../WebApp.ipynb 37
 # Make sure that all the setup things get triggered
 dropdown.select = 'Author'
